@@ -94,7 +94,7 @@ export type RunnerEvent =
 
 function computeSuiteId(
   suiteFilePathOrId: string | undefined,
-  suiteName: string
+  suiteName: string,
 ) {
   if (suiteFilePathOrId && suiteFilePathOrId.trim().length > 0)
     return suiteFilePathOrId;
@@ -139,14 +139,14 @@ function isCorrect(input: {
   if (input.negative_answers) {
     if (
       input.negative_answers.some((answer) =>
-        resultLower.includes(answer.toLowerCase())
+        resultLower.includes(answer.toLowerCase()),
       )
     ) {
       return false;
     }
   }
   return input.answers.some((answer) =>
-    resultLower.includes(answer.toLowerCase())
+    resultLower.includes(answer.toLowerCase()),
   );
 }
 
@@ -166,7 +166,7 @@ async function runTest(input: {
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(
       () => reject(new Error("Test timeout")),
-      TIMEOUT_SECONDS * 1000
+      TIMEOUT_SECONDS * 1000,
     );
   });
 
@@ -178,7 +178,6 @@ async function runTest(input: {
 
       temperature: 1.0,
       providerOptions: {
-        ...model.providerOptions,
         // openrouter: {
         //   reasoning: {
         //     max_tokens: 2048,
@@ -289,7 +288,7 @@ async function findPreviousResultsForSuite(options: {
   const suiteDirForVersion = join(
     resultsRoot,
     suiteId,
-    version || "unversioned"
+    version || "unversioned",
   );
 
   const discoveredJsonFiles = new Set<string>();
@@ -350,7 +349,7 @@ async function findPreviousResultsForSuite(options: {
     resultsRoot,
     "cache",
     suiteId,
-    version || "unversioned"
+    version || "unversioned",
   );
   const cacheFiles = await walk(cacheDir).catch(() => []);
   for (const file of cacheFiles) {
@@ -382,13 +381,13 @@ async function findPreviousResultsForSuite(options: {
       if (systemPrompt && systemPrompt !== suite.system_prompt) {
         throw new Error(
           `Cached entry system prompt mismatch for ${basename(
-            file
+            file,
           )}. Expected current suite system prompt. Delete '${join(
             resultsRoot,
             "cache",
             suiteId,
-            version || "unversioned"
-          )}' to reset cache.`
+            version || "unversioned",
+          )}' to reset cache.`,
         );
       }
 
@@ -431,7 +430,7 @@ function generateMarkdownReport(
     duration: number;
   }>,
   metadata: any,
-  suite: TestSuite
+  suite: TestSuite,
 ): string {
   let markdown = `# ${metadata.testSuite} - Test Results\n\n`;
 
@@ -442,13 +441,16 @@ function generateMarkdownReport(
   markdown += `**Failed:** ${metadata.failed}\n`;
   markdown += `**Models:** ${metadata.models.join(", ")}\n\n`;
 
-  const testGroups = results.reduce((acc, result) => {
-    if (!acc[result.testIndex]) {
-      acc[result.testIndex] = [];
-    }
-    acc[result.testIndex].push(result);
-    return acc;
-  }, {} as Record<number, typeof results>);
+  const testGroups = results.reduce(
+    (acc, result) => {
+      if (!acc[result.testIndex]) {
+        acc[result.testIndex] = [];
+      }
+      acc[result.testIndex].push(result);
+      return acc;
+    },
+    {} as Record<number, typeof results>,
+  );
 
   Object.entries(testGroups)
     .sort(([a], [b]) => parseInt(a) - parseInt(b))
@@ -549,13 +551,13 @@ async function writeCacheEntry(params: {
     OUTPUT_DIRECTORY,
     "cache",
     suiteId,
-    version || "unversioned"
+    version || "unversioned",
   );
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
   const filename = `${safeFilename(
-    model
+    model,
   )}__run${runNumber}__${sigHash}__${ts}.json`;
   const filePath = join(dir, filename);
 
@@ -590,18 +592,18 @@ export async function testRunner(options: TestRunnerOptions) {
       (suiteFilePath
         ? basename(suiteFilePath, extname(suiteFilePath))
         : undefined),
-    suite.name
+    suite.name,
   );
 
   if (!silent)
     console.log(
-      `Starting test runner for suite "${suite.name}" (id: ${suiteId}) with ${suite.tests.length} tests, ${modelsToRun.length} models, ${TEST_RUNS_PER_MODEL} runs each`
+      `Starting test runner for suite "${suite.name}" (id: ${suiteId}) with ${suite.tests.length} tests, ${modelsToRun.length} models, ${TEST_RUNS_PER_MODEL} runs each`,
     );
   if (!silent)
     console.log(
       `Concurrency limit: ${MAX_CONCURRENCY}, Timeout: ${TIMEOUT_SECONDS}s, Version: ${
         version || "(none)"
-      }`
+      }`,
     );
 
   const workQueue: WorkItem[] = [];
@@ -651,11 +653,14 @@ export async function testRunner(options: TestRunnerOptions) {
     completionTokens: number;
   }> = [];
 
-  const itemsByTest = workQueue.reduce((acc, item) => {
-    const idx = item.originalTestIndex;
-    (acc[idx] ||= []).push(item);
-    return acc;
-  }, {} as Record<number, WorkItem[]>);
+  const itemsByTest = workQueue.reduce(
+    (acc, item) => {
+      const idx = item.originalTestIndex;
+      (acc[idx] ||= []).push(item);
+      return acc;
+    },
+    {} as Record<number, WorkItem[]>,
+  );
 
   const planTotals: Record<
     string,
@@ -710,7 +715,7 @@ export async function testRunner(options: TestRunnerOptions) {
               throw new Error(
                 `Cached result mismatch for model ${r.model} test ${
                   testRun.testIndex + 1
-                }.${testRun.runNumber} from ${basename(r.sourceFile)}`
+                }.${testRun.runNumber} from ${basename(r.sourceFile)}`,
               );
             }
 
@@ -754,7 +759,7 @@ export async function testRunner(options: TestRunnerOptions) {
               console.log(
                 `↺ Reused result for test ${testRun.testIndex + 1}.${
                   testRun.runNumber
-                } on ${reused.model} from ${basename(reused.sourceFile)}`
+                } on ${reused.model} from ${basename(reused.sourceFile)}`,
               );
           } else {
             onEvent?.({ type: "start", model: testRun.model.name });
@@ -762,7 +767,7 @@ export async function testRunner(options: TestRunnerOptions) {
               console.log(
                 `Running test ${testRun.testIndex + 1}.${
                   testRun.runNumber
-                } for ${testRun.model.name}`
+                } for ${testRun.model.name}`,
               );
             const runResult = await runTest({
               model: testRun.model,
@@ -816,7 +821,7 @@ export async function testRunner(options: TestRunnerOptions) {
                   `Failed to write cache for ${testRun.model.name} test ${
                     testRun.testIndex + 1
                   }.${testRun.runNumber}:`,
-                  e
+                  e,
                 );
             }
 
@@ -832,7 +837,7 @@ export async function testRunner(options: TestRunnerOptions) {
               console.log(
                 `✓ Completed test ${testRun.testIndex + 1}.${
                   testRun.runNumber
-                } for ${testRun.model.name} in ${duration}ms`
+                } for ${testRun.model.name} in ${duration}ms`,
               );
           }
         } catch (error) {
@@ -865,7 +870,7 @@ export async function testRunner(options: TestRunnerOptions) {
             console.log(
               `✗ Failed test ${testRun.testIndex + 1}.${
                 testRun.runNumber
-              } for ${testRun.model.name}: ${errorMessage}`
+              } for ${testRun.model.name}: ${errorMessage}`,
             );
         } finally {
         }
@@ -875,8 +880,8 @@ export async function testRunner(options: TestRunnerOptions) {
     const workerCount = Math.min(MAX_CONCURRENCY, jobQueue.length);
     const workers = Array.from({ length: workerCount }, (_, i) =>
       new Promise<void>((resolve) =>
-        setTimeout(() => resolve(), i * STAGGER_DELAY_MS)
-      ).then(() => worker())
+        setTimeout(() => resolve(), i * STAGGER_DELAY_MS),
+      ).then(() => worker()),
     );
 
     await Promise.all(workers);
@@ -949,7 +954,7 @@ export async function testRunner(options: TestRunnerOptions) {
       console.log(
         `Preloading ${reuseJobs.length} cached result${
           reuseJobs.length === 1 ? "" : "s"
-        }…`
+        }…`,
       );
     for (const testRun of reuseJobs) {
       const startTime = Date.now();
@@ -968,7 +973,7 @@ export async function testRunner(options: TestRunnerOptions) {
           throw new Error(
             `Cached result mismatch for model ${r.model} test ${
               testRun.testIndex + 1
-            }.${testRun.runNumber} from ${basename(r.sourceFile)}`
+            }.${testRun.runNumber} from ${basename(r.sourceFile)}`,
           );
         }
 
@@ -1010,7 +1015,7 @@ export async function testRunner(options: TestRunnerOptions) {
           console.log(
             `↺ Reused result for test ${testRun.testIndex + 1}.${
               testRun.runNumber
-            } on ${r.model} from ${basename(r.sourceFile)}`
+            } on ${r.model} from ${basename(r.sourceFile)}`,
           );
       } catch (error) {
         const duration = Date.now() - startTime;
@@ -1042,7 +1047,7 @@ export async function testRunner(options: TestRunnerOptions) {
           console.log(
             `✗ Failed test ${testRun.testIndex + 1}.${testRun.runNumber} for ${
               testRun.model.name
-            }: ${errorMessage}`
+            }: ${errorMessage}`,
           );
       }
     }
@@ -1052,7 +1057,7 @@ export async function testRunner(options: TestRunnerOptions) {
     console.log(
       `Scheduling ${executeJobs.length} execution${
         executeJobs.length === 1 ? "" : "s"
-      } across ${suite.tests.length} tests and ${modelsToRun.length} models`
+      } across ${suite.tests.length} tests and ${modelsToRun.length} models`,
     );
 
   await processJobQueue(executeJobs);
@@ -1062,12 +1067,12 @@ export async function testRunner(options: TestRunnerOptions) {
 
   const correct = results.filter((r) => !r.error && r.result?.correct).length;
   const incorrect = results.filter(
-    (r) => !r.error && !r.result?.correct
+    (r) => !r.error && !r.result?.correct,
   ).length;
   const errors = results.filter((r) => r.error).length;
   if (!silent)
     console.log(
-      `Correct: ${correct}, Incorrect: ${incorrect}, Errors: ${errors}`
+      `Correct: ${correct}, Incorrect: ${incorrect}, Errors: ${errors}`,
     );
 
   try {
@@ -1111,7 +1116,7 @@ export async function testRunner(options: TestRunnerOptions) {
     const markdownContent = generateMarkdownReport(
       results,
       outputData.metadata,
-      suite
+      suite,
     );
 
     await writeFile(markdownFilepath, markdownContent, "utf-8");
@@ -1157,7 +1162,7 @@ export async function testRunner(options: TestRunnerOptions) {
           totalCost: number;
           totalCompletionTokens: number;
         }
-      >
+      >,
     );
 
     const modelRankings = Object.entries(modelStats)
@@ -1224,7 +1229,7 @@ export async function testRunner(options: TestRunnerOptions) {
     await writeFile(
       summaryFilepath,
       JSON.stringify(summaryData, null, 2),
-      "utf-8"
+      "utf-8",
     );
     if (!silent) console.log(`Summary saved to: ${summaryFilepath}`);
   } catch (error) {
